@@ -3,6 +3,8 @@ package com.jonathan.colegiogeneration.api.controller;
 import com.jonathan.colegiogeneration.domain.model.Aluno;
 import com.jonathan.colegiogeneration.domain.service.AlunoService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -46,22 +49,55 @@ public class AlunoController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Retorna um aluno pelo id")
+            @ApiResponse(responseCode = "200", description = "Retorna uma lista paginada de alunos",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Aluno.class))),
+            @ApiResponse(responseCode = "400", description = "Requisição inválida",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)))
     })
     @Operation(description = "Busca todos os Alunos")
-    @GetMapping(
-//            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = "application/json;charset=UTF-8")
+    @GetMapping(produces = "application/json;charset=UTF-8")
     ResponseEntity<Page<Aluno>> getAllAluno(@PageableDefault(size = 5) Pageable pageable){
         return alunoService.getAllAluno(pageable);
     }
 
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Aluno criado com sucesso",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Aluno.class))),
+            @ApiResponse(responseCode = "400", description = "Requisição inválida",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
     @Operation(description = "Cria um Aluno")
     @PostMapping
     ResponseEntity<Aluno> postAluno(@RequestBody Aluno aluno){
         return ResponseEntity.status(HttpStatus.CREATED).body(alunoService.postAluno(aluno));
     }
 
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Aluno atualizado com sucesso",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Aluno.class))),
+            @ApiResponse(responseCode = "400", description = "Requisição inválida",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Aluno não encontrado",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
     @Operation(description = "Atualiza um Aluno por id")
     @PutMapping("/{id}")
     public Aluno putAluno(@PathVariable Long id, @RequestBody Aluno aluno) {
@@ -70,7 +106,22 @@ public class AlunoController {
         return alunoService.putAluno(aluno);
     }
 
-    @Operation(description = "Atualiza  Aluno por parametros")
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Aluno atualizado com sucesso",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Aluno.class))),
+            @ApiResponse(responseCode = "400", description = "Requisição inválida",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Aluno não encontrado",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @Operation(description = "Atualiza um Aluno por parâmetros")
     @PatchMapping("/{id}")
     public ResponseEntity<Aluno> patchAluno(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
         var aluno = this.getAlunoById(id);
@@ -79,14 +130,27 @@ public class AlunoController {
     }
 
 
-    @Operation(description = "Deleta um Aluno por id")
-    //    @Operation(summary = "Deleta uma categoria pelo id")
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteteAluno(@RequestBody Aluno idAluno){
-        alunoService.deleteAluno(idAluno);
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
 
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Aluno excluído com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Requisição inválida",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Aluno não encontrado",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @Operation(description = "Deleta um Aluno por id")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteAluno(@PathVariable Long idAluno) {
+        var aluno = getAlunoById(idAluno);
+        alunoService.deleteAluno(aluno);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
+
 
 
 }
