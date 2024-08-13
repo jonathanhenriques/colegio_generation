@@ -2,6 +2,9 @@ package com.jonathan.colegiogeneration.api.controller;
 
 import com.jonathan.colegiogeneration.domain.model.Aluno;
 import com.jonathan.colegiogeneration.domain.service.AlunoService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -29,14 +32,23 @@ public class AlunoController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AlunoController.class);
 
+    @Operation(description = "Busca Aluno por id")
     @GetMapping(value = "/{idAluno}",
 //            consumes = MediaType.APPLICATION_JSON_VALUE,
     produces = "application/json;charset=UTF-8"
     )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Retorna um aluno pelo id"),
+            @ApiResponse(responseCode = "400", description = "Não existe o aluno com o id informado")
+    })
     Aluno getAlunoById(@PathVariable Long idAluno){
         return alunoService.getAlunoById(idAluno);
     }
 
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Retorna um aluno pelo id")
+    })
+    @Operation(description = "Busca todos os Alunos")
     @GetMapping(
 //            consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = "application/json;charset=UTF-8")
@@ -44,11 +56,13 @@ public class AlunoController {
         return alunoService.getAllAluno(pageable);
     }
 
+    @Operation(description = "Cria um Aluno")
     @PostMapping
     ResponseEntity<Aluno> postAluno(@RequestBody Aluno aluno){
         return ResponseEntity.status(HttpStatus.CREATED).body(alunoService.postAluno(aluno));
     }
 
+    @Operation(description = "Atualiza um Aluno por id")
     @PutMapping("/{id}")
     public Aluno putAluno(@PathVariable Long id, @RequestBody Aluno aluno) {
         this.getAlunoById(id);
@@ -56,6 +70,7 @@ public class AlunoController {
         return alunoService.putAluno(aluno);
     }
 
+    @Operation(description = "Atualiza  Aluno por parametros")
     @PatchMapping("/{id}")
     public ResponseEntity<Aluno> patchAluno(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
         var aluno = this.getAlunoById(id);
@@ -64,7 +79,7 @@ public class AlunoController {
     }
 
 
-
+    @Operation(description = "Deleta um Aluno por id")
     //    @Operation(summary = "Deleta uma categoria pelo id")
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteteAluno(@RequestBody Aluno idAluno){

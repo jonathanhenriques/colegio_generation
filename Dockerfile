@@ -1,20 +1,24 @@
-# Estágio de construção
-FROM ubuntu:latest AS build
 
-RUN apt-get update && \
-    apt-get install -y openjdk-17-jdk maven
+# Etapa de build
+FROM maven:3.8.7-eclipse-temurin-17 AS build
 
-COPY . .
+# Copia o código-fonte e arquivos de configuração do projeto para o contêiner
+COPY . /app
+WORKDIR /app
 
-RUN mvn clean install
+# Compila o projeto e gera o JAR
+RUN mvn clean package -DskipTests
 
-# Estágio de execução
-FROM openjdk:17-jdk-slim
+# Etapa de execução
+FROM eclipse-temurin:17-jdk-jammy
 
+# Exponha a porta 8080
 EXPOSE 8080
 
-# Copiar o JAR gerado no estágio de construção para o estágio final
-COPY --from=build /target/deploy_render-1.0.0.jar colegiogeneration.jar
+# Copia o JAR gerado na etapa de build para a etapa de execução
+COPY --from=build /app/target/colegiogeneration-0.0.1-SNAPSHOT.jar app.jar
 
-# Definir o ponto de entrada correto
-ENTRYPOINT ["java", "-jar", "colegiogeneration.jar"]
+# Define o ponto de entrada para o contêiner
+ENTRYPOINT ["java", "-jar", "app.jar"]
+
+
