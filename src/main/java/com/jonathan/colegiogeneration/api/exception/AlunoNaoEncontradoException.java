@@ -8,10 +8,10 @@ public class AlunoNaoEncontradoException extends RuntimeException{
 	private static final long serialVersionUID = 1L;
 
 	public AlunoNaoEncontradoException(Object message) {
-        super("Aluno não encontrada! | " + message);
+        super("Aluno não encontrado! | " + message);
     }
 
     public AlunoNaoEncontradoException() {
-        super("Aluno não encontrada!");
+        super("Aluno não encontrado!");
     }
 }
