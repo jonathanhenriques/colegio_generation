@@ -61,9 +61,6 @@ public class AlunoController {
 
         links.forEach(alunoResource::add);
 
-
-
-
         log.info("Alunocontroller GetById chamado para id  {}", aluno.getId());
         return ResponseEntity.ok(alunoResource);
     }
