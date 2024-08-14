@@ -18,6 +18,7 @@ public class Aluno extends RepresentationModel<Aluno> {
     private Long id;
 
     @NotBlank(message = "nome não pode ser vazio!")
+    @Size(max = 200, message = "nome não pode ter mais que 200 caracteres")
     private String nome;
 
     @NotNull
