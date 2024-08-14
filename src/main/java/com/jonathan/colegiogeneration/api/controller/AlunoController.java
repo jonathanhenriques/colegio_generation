@@ -16,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.HttpStatus;
@@ -23,8 +24,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -47,23 +51,38 @@ public class AlunoController {
                             schema = @Schema(implementation = Aluno.class))),
             @ApiResponse(responseCode = "400", description = "Não existe o aluno com o id informado",
                     content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))),
+                        @ApiResponse(responseCode = "404", description = "Aluno não encontrado",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
+                    content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class)))
     })
     public ResponseEntity<EntityModel<Aluno>> getAlunoById(@PathVariable Long idAluno) {
         Aluno aluno = alunoService.getAlunoById(idAluno);
 
-        // Cria o EntityModel com o aluno
         EntityModel<Aluno> alunoResource = EntityModel.of(aluno);
 
-        // Adiciona links HATEOAS
-        WebMvcLinkBuilder selfLinkBuilder = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).getAlunoById(idAluno));
-        alunoResource.add(selfLinkBuilder.withSelfRel());
+        Link selfLink = linkTo(AlunoController.class).slash(aluno.getId()).withSelfRel();
+        alunoResource.add(selfLink);
 
-        WebMvcLinkBuilder allAlunosLinkBuilder = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).getAllAluno(Pageable.unpaged()));
-        alunoResource.add(allAlunosLinkBuilder.withRel("obter-todos-alunos"));
+        Link postAlunoLink = linkTo(AlunoController.class).slash("alunos").withRel("criar-aluno");
+        alunoResource.add(postAlunoLink);
 
+        Link putAlunoLink = linkTo(AlunoController.class).slash("alunos").slash(aluno.getId()).withRel("atualizar-aluno");
+        alunoResource.add(putAlunoLink);
+
+        Link deleteAlunoLink = linkTo(AlunoController.class).slash("alunos").slash(aluno.getId()).withRel("deletar-aluno");
+        alunoResource.add(deleteAlunoLink);
+
+        Link allAlunosLink = linkTo(AlunoController.class).slash("alunos").withRel("obter-todos-alunos");
+        alunoResource.add(allAlunosLink);
+
+        log.info("GetById chamado para id  {}", aluno.getId());
         return ResponseEntity.ok(alunoResource);
     }
+
 
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Retorna uma lista paginada de alunos",
@@ -85,7 +104,7 @@ public class AlunoController {
         List<EntityModel<Aluno>> alunoResources = alunosPage.stream()
                 .map(aluno -> {
                     EntityModel<Aluno> alunoResource = EntityModel.of(aluno);
-                    alunoResource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).getAlunoById(aluno.getId())).withSelfRel());
+                    alunoResource.add(linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).getAlunoById(aluno.getId())).withSelfRel());
                     return alunoResource;
                 })
                 .toList();
@@ -96,11 +115,11 @@ public class AlunoController {
                         alunosPage.getNumber(),
                         alunosPage.getTotalElements()));
 
-        // Adiciona link para a própria coleção paginada
-        pagedModel.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).getAllAluno(pageable)).withSelfRel());
+        pagedModel.add(linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).getAllAluno(pageable)).withSelfRel());
 
-        // Adiciona link para criar um novo aluno
-        pagedModel.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).postAluno(null)).withRel("criar-aluno"));
+        pagedModel.add(linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).postAluno(null)).withRel("criar-aluno"));
+
+        log.info("GetAll chamado com / {} Alunos", alunosPage.getNumber());
 
         return ResponseEntity.ok(pagedModel);
     }
@@ -120,20 +139,29 @@ public class AlunoController {
     @Operation(description = "Cria um Aluno")
     @PostMapping
     public ResponseEntity<EntityModel<Aluno>> postAluno(@RequestBody Aluno aluno) {
-        Aluno alunoCriado = alunoService.postAluno(aluno);
+        Aluno alunoSalvo = alunoService.postAluno(aluno);
 
-        // Cria o EntityModel com o aluno criado
-        EntityModel<Aluno> alunoResource = EntityModel.of(alunoCriado);
+        EntityModel<Aluno> alunoResource = EntityModel.of(aluno);
 
-        // Adiciona link para o próprio recurso (o aluno criado)
-        WebMvcLinkBuilder selfLinkBuilder = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).getAlunoById(alunoCriado.getId()));
-        alunoResource.add(selfLinkBuilder.withSelfRel());
+        Link selfLink = linkTo(AlunoController.class).slash(aluno.getId()).withSelfRel();
+        alunoResource.add(selfLink);
 
-        // Adiciona link para a lista de todos os alunos
-        WebMvcLinkBuilder allAlunosLinkBuilder = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).getAllAluno(Pageable.unpaged()));
-        alunoResource.add(allAlunosLinkBuilder.withRel("obter-todos-alunos"));
+        Link getByIdAlunoLink = linkTo(AlunoController.class).slash("alunos").slash(alunoSalvo.getId()).withRel("obter-por-id-aluno");
+        alunoResource.add(getByIdAlunoLink);
 
-        return ResponseEntity.created(selfLinkBuilder.toUri()).body(alunoResource);
+        Link putAlunoLink = linkTo(AlunoController.class).slash("alunos").slash(alunoSalvo.getId()).withRel("atualizar-aluno");
+        alunoResource.add(putAlunoLink);
+
+        Link deleteAlunoLink = linkTo(AlunoController.class).slash("alunos").slash(alunoSalvo.getId()).withRel("deletar-aluno");
+        alunoResource.add(deleteAlunoLink);
+
+        // Adiciona link para obter todos os alunos
+        Link allAlunosLink = linkTo(AlunoController.class).slash("alunos").withRel("obter-todos-alunos");
+        alunoResource.add(allAlunosLink);
+
+        log.info("postAluno chamado e criado / {}", alunoSalvo.getId());
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(alunoResource);
     }
 
 
@@ -158,16 +186,21 @@ public class AlunoController {
         aluno.setId(id);
         Aluno alunoAtualizado = alunoService.putAluno(aluno);
 
-        // Cria o EntityModel com o aluno atualizado
         EntityModel<Aluno> alunoResource = EntityModel.of(alunoAtualizado);
 
-        // Adiciona link para o próprio recurso (o aluno atualizado)
-        WebMvcLinkBuilder selfLinkBuilder = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).getAlunoById(id));
-        alunoResource.add(selfLinkBuilder.withSelfRel());
+        WebMvcLinkBuilder getByIdAlunoLinkBuilder = linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).getAlunoById(alunoAtualizado.getId()));
+        alunoResource.add(getByIdAlunoLinkBuilder.withRel("obter-por-id-aluno"));
 
-        // Adiciona link para a lista de todos os alunos
-        WebMvcLinkBuilder allAlunosLinkBuilder = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).getAllAluno(Pageable.unpaged()));
+        WebMvcLinkBuilder postAlunosLinkBuilder = linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).postAluno(null));
+        alunoResource.add(postAlunosLinkBuilder.withRel("criar-aluno")); //
+
+        WebMvcLinkBuilder deleteAlunoLinkBuilder = linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).deleteAluno(id));
+        alunoResource.add(deleteAlunoLinkBuilder.withRel("deletar-aluno"));
+
+        WebMvcLinkBuilder allAlunosLinkBuilder = linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).getAllAluno(Pageable.unpaged()));
         alunoResource.add(allAlunosLinkBuilder.withRel("obter-todos-alunos"));
+
+        log.info("putAluno chamado e atualiado / {}", alunoAtualizado.getId());
 
         return ResponseEntity.ok(alunoResource);
     }
@@ -193,16 +226,27 @@ public class AlunoController {
         // Atualiza o aluno
         Aluno alunoAtualizado = alunoService.patchAluno(id, updates);
 
-        // Cria o EntityModel com o aluno atualizado
         EntityModel<Aluno> alunoResource = EntityModel.of(alunoAtualizado);
 
-        // Adiciona link para o próprio recurso (o aluno atualizado)
-        WebMvcLinkBuilder selfLinkBuilder = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).getAlunoById(id));
+        WebMvcLinkBuilder selfLinkBuilder = linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).getAlunoById(id));
         alunoResource.add(selfLinkBuilder.withSelfRel());
 
-        // Adiciona link para a lista de todos os alunos
-        WebMvcLinkBuilder allAlunosLinkBuilder = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).getAllAluno(Pageable.unpaged()));
+        WebMvcLinkBuilder getByIdAlunoLinkBuilder = linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).getAlunoById(alunoAtualizado.getId()));
+        alunoResource.add(getByIdAlunoLinkBuilder.withRel("obter-por-id-aluno"));
+
+        WebMvcLinkBuilder postAlunosLinkBuilder = linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).postAluno(null));
+        alunoResource.add(postAlunosLinkBuilder.withRel("criar-aluno")); // Alterei o nome do relacionamento para "criar-aluno"
+
+        WebMvcLinkBuilder putAlunosLinkBuilder = linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).putAluno(id, null));
+        alunoResource.add(putAlunosLinkBuilder.withRel("atualizar-aluno"));
+
+        WebMvcLinkBuilder deleteAlunoLinkBuilder = linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).deleteAluno(id));
+        alunoResource.add(deleteAlunoLinkBuilder.withRel("deletar-aluno"));
+
+        WebMvcLinkBuilder allAlunosLinkBuilder = linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).getAllAluno(Pageable.unpaged()));
         alunoResource.add(allAlunosLinkBuilder.withRel("obter-todos-alunos"));
+
+        log.info("pathAluno chamado e atualiado / {}", alunoAtualizado.getId());
 
         return ResponseEntity.ok(alunoResource);
     }
@@ -210,7 +254,7 @@ public class AlunoController {
 
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Aluno excluído com sucesso"),
+            @ApiResponse(responseCode = "200", description = "Aluno excluído com sucesso"),
             @ApiResponse(responseCode = "400", description = "Requisição inválida",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class))),
@@ -225,9 +269,31 @@ public class AlunoController {
     @DeleteMapping("/{idAluno}")
     public ResponseEntity<?> deleteAluno(@PathVariable Long idAluno) {
         var aluno = getAlunoById(idAluno).getBody().getContent();
+
         alunoService.deleteAluno(aluno);
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+
+        // Cria um Map para a mensagem
+        Map<String, String> responseMessage = new HashMap<>();
+        responseMessage.put("mensagem", "Aluno excluído com sucesso");
+
+        // Cria o EntityModel com o Map
+        EntityModel<Map<String, String>> responseResource = EntityModel.of(responseMessage);
+
+        WebMvcLinkBuilder postAlunosLinkBuilder = linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).postAluno(null));
+        responseResource.add(postAlunosLinkBuilder.withRel("criar-aluno"));
+
+        WebMvcLinkBuilder allAlunosLinkBuilder = linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).getAllAluno(Pageable.unpaged()));
+        responseResource.add(allAlunosLinkBuilder.withRel("obter-todos-alunos"));
+
+        log.info("deleteAluno chamado e deletado ");
+
+        // Retorna a resposta com a mensagem de exclusão e os links HATEOAS
+        return ResponseEntity.ok(responseResource);
     }
+
+
+
+
 
 
 

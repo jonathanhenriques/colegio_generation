@@ -3,6 +3,7 @@ package com.jonathan.colegiogeneration.domain.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import org.springframework.hateoas.RepresentationModel;
 
 @Entity
 @Table(name = "TB_ALUNO")
@@ -10,7 +11,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class Aluno {
+public class Aluno extends RepresentationModel<Aluno> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
