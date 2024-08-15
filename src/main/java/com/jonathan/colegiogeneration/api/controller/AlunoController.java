@@ -6,6 +6,7 @@ import com.jonathan.colegiogeneration.domain.service.AlunoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
@@ -141,6 +142,7 @@ public class AlunoController {
     }
 
 
+
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Sucesso",
                     content = @Content(mediaType = "application/json")),
@@ -153,18 +155,32 @@ public class AlunoController {
     })
     @Operation(description = "Atualiza um Aluno por id")
     @PutMapping("/{id}")
-    public ResponseEntity<EntityModel<Aluno>> putAluno(@PathVariable Long id, @RequestBody Aluno aluno) {
-        // Atualiza o aluno
+    public ResponseEntity<EntityModel<Aluno>> putAluno(
+            @PathVariable Long id,
+            @RequestBody @Schema(description = "Detalhes do aluno", example = """
+        {
+            "nome": "Simone Biles",
+            "idade": 27,
+            "notaPrimeiroSemestre": 8,
+            "notaSegundoSemestre": 7,
+            "nomeProfessor": "Professor Silva",
+            "numeroDaSala": 101
+        }""") Aluno aluno) {
         aluno.setId(id);
         Aluno alunoAtualizado = alunoService.putAluno(aluno);
         EntityModel<Aluno> alunoResource = EntityModel.of(aluno);
 
-        List<Link> links = Arrays.asList(getSelfLink(alunoAtualizado), getByIdAlunoLink(alunoAtualizado.getId()), getPostAlunoLink(),
-                getDeleteAlunoLink(alunoAtualizado), getAllAlunosLink());
+        List<Link> links = Arrays.asList(
+                getSelfLink(alunoAtualizado),
+                getByIdAlunoLink(alunoAtualizado.getId()),
+                getPostAlunoLink(),
+                getDeleteAlunoLink(alunoAtualizado),
+                getAllAlunosLink()
+        );
 
         links.forEach(alunoResource::add);
 
-        log.info("Alunocontroller putAluno chamado e atualiado / {}", alunoAtualizado.getId());
+        log.info("Alunocontroller putAluno chamado e atualizado / {}", alunoAtualizado.getId());
 
         return ResponseEntity.ok(alunoResource);
     }
@@ -182,7 +198,15 @@ public class AlunoController {
     })
     @Operation(description = "Atualiza um Aluno por parâmetros")
     @PatchMapping("/{id}")
-    public ResponseEntity<EntityModel<Aluno>> patchAluno(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
+    public ResponseEntity<EntityModel<Aluno>> patchAluno(@PathVariable Long id, @RequestBody @Schema(description = "Detalhes do aluno", example = """
+        {
+            "nome": "Simone Biles",
+            "idade": 27,
+            "notaPrimeiroSemestre": 8,
+            "notaSegundoSemestre": 7,
+            "nomeProfessor": "Professor Silva",
+            "numeroDaSala": 101
+        }""")  Map<String, Object> updates) {
         // Atualiza o aluno
         log.info("patch id passado / {}", id);
         Aluno alunoAtualizado = alunoService.patchAluno(id, updates);
