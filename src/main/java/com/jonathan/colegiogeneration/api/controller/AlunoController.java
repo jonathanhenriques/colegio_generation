@@ -8,7 +8,6 @@ import com.jonathan.colegiogeneration.domain.reponsedto.AlunoDTO;
 import com.jonathan.colegiogeneration.domain.reponsedto.AlunoDTOResponseAll;
 import com.jonathan.colegiogeneration.domain.repository.filter.AlunoFilter;
 import com.jonathan.colegiogeneration.domain.service.AlunoService;
-import com.jonathan.colegiogeneration.infra.AlunoSpecification;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
