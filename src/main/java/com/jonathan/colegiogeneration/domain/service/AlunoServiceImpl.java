@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -126,5 +127,10 @@ public class AlunoServiceImpl implements AlunoService {
     public void deleteAluno(Aluno aluno) {
         log.info("AlunoService deleteAluno chamado para id " + aluno.getId());
         alunoRepository.delete(aluno);
+    }
+
+    @Override
+    public Page<Aluno> findAll(Specification<Aluno> alunoSpecification, Pageable pageable) {
+        return alunoRepository.findAll(alunoSpecification,pageable);
     }
 }

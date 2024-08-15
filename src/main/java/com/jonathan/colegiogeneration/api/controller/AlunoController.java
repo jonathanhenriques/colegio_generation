@@ -1,8 +1,11 @@
 package com.jonathan.colegiogeneration.api.controller;
 
 import com.jonathan.colegiogeneration.domain.model.Aluno;
+import com.jonathan.colegiogeneration.domain.reponsedto.AlunoDTO;
 import com.jonathan.colegiogeneration.domain.reponsedto.AlunoDTOResponseAll;
+import com.jonathan.colegiogeneration.domain.repository.filter.AlunoFilter;
 import com.jonathan.colegiogeneration.domain.service.AlunoService;
+import com.jonathan.colegiogeneration.infra.AlunoSpecification;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -12,6 +15,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.hateoas.EntityModel;
@@ -26,6 +30,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 
@@ -52,13 +57,14 @@ public class AlunoController {
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
                     content = @Content(mediaType = "application/json"))
     })
-    public ResponseEntity<EntityModel<Aluno>> getAlunoById(@PathVariable Long idAluno) {
+    public ResponseEntity<EntityModel<AlunoDTO>> getAlunoById(@PathVariable Long idAluno) {
         Aluno aluno = alunoService.getAlunoById(idAluno);
+        AlunoDTO dto = mapToAlunoDTO(aluno);
 
-        EntityModel<Aluno> alunoResource = EntityModel.of(aluno);
+        EntityModel<AlunoDTO> alunoResource = EntityModel.of(dto);
 
-        List<Link> links = Arrays.asList(getSelfLink(aluno), getPostAlunoLink(), getPutAlunoLink(aluno),
-                getDeleteAlunoLink(aluno), getAllAlunosLink());
+        List<Link> links = Arrays.asList(getSelfLink(dto), getPostAlunoLink(), getPutAlunoLink(dto),
+                getDeleteAlunoLink(dto), getAllAlunosLink());
 
         links.forEach(alunoResource::add);
 
@@ -82,7 +88,14 @@ public class AlunoController {
     @Operation(description = "Busca todos os Alunos")
     @GetMapping(produces = "application/json;charset=UTF-8")
     public ResponseEntity<PagedModel<EntityModel<AlunoDTOResponseAll>>> getAllAluno(@Parameter(hidden = true) @PageableDefault(size = 5) Pageable pageable) {
-        Page<Aluno> alunosPage = alunoService.getAllAluno(pageable).getBody();
+
+       List<AlunoDTO> alunosPageDto = alunoService.getAllAluno(pageable).getBody().stream().map(a -> {
+            AlunoDTO dto = mapToAlunoDTO(a);
+            return dto;
+        }).collect(Collectors.toList());
+
+        Page<AlunoDTO> alunosPage = new PageImpl<>(alunosPageDto);
+
 
         // Transforma cada aluno em um EntityModel com links HATEOAS
         List<EntityModel<AlunoDTOResponseAll>> alunoResources = alunosPage.stream()
@@ -106,9 +119,18 @@ public class AlunoController {
 
         pagedModel.add(linkTo(WebMvcLinkBuilder.methodOn(AlunoController.class).postAluno(null)).withRel("criar-aluno"));
 
+
+
         log.info("Alunocontroller GetAll chamado com / {} Alunos", alunosPage.getTotalElements());
 
         return ResponseEntity.ok(pagedModel);
+    }
+
+    @Operation(description = "Busca todos os Alunos")
+    @GetMapping(value = "/filtro", produces = "application/json;charset=UTF-8")
+    public Page<Aluno> pesquisar(AlunoFilter filtro, @PageableDefault(size = 5) Pageable pageable) {
+//        Page<AtendenteED> page = atendenteRepository.findAll(ExameSpecifications.usandoFiltro(filtro), pageable);
+        return alunoService.findAll(AlunoSpecification.usandoFiltro(filtro), pageable);
     }
 
 
@@ -126,10 +148,10 @@ public class AlunoController {
     })
     @Operation(description = "Cria um Aluno")
     @PostMapping
-    public ResponseEntity<EntityModel<Aluno>> postAluno(@RequestBody Aluno aluno) {
-        Aluno alunoSalvo = alunoService.postAluno(aluno);
+    public ResponseEntity<EntityModel<AlunoDTO>> postAluno(@RequestBody AlunoDTO aluno) {
+        AlunoDTO alunoSalvo = mapToAlunoDTO(alunoService.postAluno(mapToAluno(aluno)));
 
-        EntityModel<Aluno> alunoResource = EntityModel.of(aluno);
+        EntityModel<AlunoDTO> alunoResource = EntityModel.of(alunoSalvo);
 
         List<Link> links = Arrays.asList(getSelfLink(alunoSalvo), getByIdAlunoLink(alunoSalvo.getId()), getPutAlunoLink(alunoSalvo),
                 getDeleteAlunoLink(alunoSalvo), getAllAlunosLink());
@@ -155,7 +177,7 @@ public class AlunoController {
     })
     @Operation(description = "Atualiza um Aluno por id")
     @PutMapping("/{id}")
-    public ResponseEntity<EntityModel<Aluno>> putAluno(
+    public ResponseEntity<EntityModel<AlunoDTO>> putAluno(
             @PathVariable Long id,
             @RequestBody @Schema(description = "Detalhes do aluno", example = """
         {
@@ -165,10 +187,10 @@ public class AlunoController {
             "notaSegundoSemestre": 7,
             "nomeProfessor": "Professor Silva",
             "numeroDaSala": 101
-        }""") Aluno aluno) {
+        }""") AlunoDTO aluno) {
         aluno.setId(id);
-        Aluno alunoAtualizado = alunoService.putAluno(aluno);
-        EntityModel<Aluno> alunoResource = EntityModel.of(aluno);
+        AlunoDTO alunoAtualizado = mapToAlunoDTO(alunoService.putAluno(mapToAluno(aluno)));
+        EntityModel<AlunoDTO> alunoResource = EntityModel.of(alunoAtualizado);
 
         List<Link> links = Arrays.asList(
                 getSelfLink(alunoAtualizado),
@@ -198,7 +220,7 @@ public class AlunoController {
     })
     @Operation(description = "Atualiza um Aluno por parâmetros")
     @PatchMapping("/{id}")
-    public ResponseEntity<EntityModel<Aluno>> patchAluno(@PathVariable Long id, @RequestBody @Schema(description = "Detalhes do aluno", example = """
+    public ResponseEntity<EntityModel<AlunoDTO>> patchAluno(@PathVariable Long id, @RequestBody @Schema(description = "Detalhes do aluno", example = """
         {
             "nome": "Simone Biles",
             "idade": 27,
@@ -209,9 +231,9 @@ public class AlunoController {
         }""")  Map<String, Object> updates) {
         // Atualiza o aluno
         log.info("patch id passado / {}", id);
-        Aluno alunoAtualizado = alunoService.patchAluno(id, updates);
+        AlunoDTO alunoAtualizado = mapToAlunoDTO(alunoService.patchAluno(id, updates));
 
-        EntityModel<Aluno> alunoResource = EntityModel.of(alunoAtualizado);
+        EntityModel<AlunoDTO> alunoResource = EntityModel.of(alunoAtualizado);
 
         List<Link> links = Arrays.asList(getSelfLink(alunoAtualizado), getByIdAlunoLink(alunoAtualizado.getId()), getPostAlunoLink(),
                 getPutAlunoLink(alunoAtualizado),getDeleteAlunoLink(alunoAtualizado), getAllAlunosLink());
@@ -239,8 +261,8 @@ public class AlunoController {
     @DeleteMapping("/{idAluno}")
     public ResponseEntity<?> deleteAluno(@PathVariable Long idAluno) {
         var aluno = getAlunoById(idAluno).getBody().getContent();
-
-        alunoService.deleteAluno(aluno);
+        Aluno alunoConvertido = mapToAluno(aluno);
+        alunoService.deleteAluno(alunoConvertido);
 
         // Cria um Map para a mensagem
         Map<String, String> responseMessage = new HashMap<>();
@@ -259,9 +281,16 @@ public class AlunoController {
         return ResponseEntity.ok(responseResource);
     }
 
+    private static Aluno mapToAluno(AlunoDTO aluno) {
+        Aluno alunoConvertido = Aluno.builder()
+                .id(aluno.getId()).nome(aluno.getNome()).idade(aluno.getIdade())
+                .notaPrimeiroSemestre(aluno.getNotaPrimeiroSemestre()).notaSegundoSemestre(aluno.getNotaSegundoSemestre())
+                .nomeProfessor(aluno.getNomeProfessor()).numeroDaSala(aluno.getNumeroDaSala()).build();
+        return alunoConvertido;
+    }
 
 
-    private static Link getSelfLink(Aluno aluno) {
+    private static Link getSelfLink(AlunoDTO aluno) {
         return linkTo(AlunoController.class).slash(aluno.getId()).withSelfRel();
     }
 
@@ -278,14 +307,26 @@ public class AlunoController {
         return linkTo(AlunoController.class).slash("alunos").withRel("obter-todos-alunos");
     }
 
-    private static Link getDeleteAlunoLink(Aluno aluno) {
+    private static Link getDeleteAlunoLink(AlunoDTO aluno) {
         return linkTo(AlunoController.class).slash("alunos").slash(aluno.getId()).withRel("deletar-aluno");
     }
 
-    private static Link getPutAlunoLink(Aluno aluno) {
+    private static Link getPutAlunoLink(AlunoDTO aluno) {
         return linkTo(AlunoController.class).slash("alunos").slash(aluno.getId()).withRel("atualizar-aluno");
     }
 
+    private AlunoDTO mapToAlunoDTO(Aluno aluno) {
+        AlunoDTO alunoDTO = new AlunoDTO();
+        alunoDTO.setId(aluno.getId());
+        alunoDTO.setNome(aluno.getNome());
+        alunoDTO.setIdade(aluno.getIdade());
+        alunoDTO.setNotaPrimeiroSemestre(aluno.getNotaPrimeiroSemestre());
+
+        alunoDTO.setNotaSegundoSemestre(aluno.getNotaSegundoSemestre());
+        alunoDTO.setNomeProfessor(aluno.getNomeProfessor());
+        alunoDTO.setNumeroDaSala(aluno.getNumeroDaSala());
+        return alunoDTO;
+    }
 
 
 

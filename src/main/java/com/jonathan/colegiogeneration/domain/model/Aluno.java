@@ -6,7 +6,7 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 import org.springframework.hateoas.RepresentationModel;
 
-@Schema(description = "Representa um aluno")
+@Schema(description = "Representa um aluno", hidden = true)
 @Entity
 @Table(name = "TB_ALUNO")
 @Builder

@@ -3,6 +3,7 @@ package com.jonathan.colegiogeneration.domain.service;
 import com.jonathan.colegiogeneration.domain.model.Aluno;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -24,4 +25,6 @@ public interface AlunoService {
     Aluno patchAluno(Long id, Map<String, Object> updates);
 
     void deleteAluno(Aluno aluno);
+
+    Page<Aluno> findAll(Specification<Aluno> alunoSpecification, Pageable pageable);
 }
