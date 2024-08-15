@@ -4,6 +4,8 @@ import com.jonathan.colegiogeneration.api.controller.AlunoController;
 import com.jonathan.colegiogeneration.api.exception.AlunoNaoEncontradoException;
 import com.jonathan.colegiogeneration.domain.model.Aluno;
 import com.jonathan.colegiogeneration.domain.repository.AlunoRepository;
+import com.jonathan.colegiogeneration.domain.repository.filter.AlunoFilter;
+import com.jonathan.colegiogeneration.infra.AlunoSpecification;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,7 +132,11 @@ public class AlunoServiceImpl implements AlunoService {
     }
 
     @Override
-    public Page<Aluno> findAll(Specification<Aluno> alunoSpecification, Pageable pageable) {
-        return alunoRepository.findAll(alunoSpecification,pageable);
+    public Page<Aluno> findAll(AlunoFilter filtro, Pageable pageable) {
+        // Usa a Specification para construir a consulta com base no filtro
+        Specification<Aluno> specification = AlunoSpecification.usandoFiltro(filtro);
+
+        // Chama o método findAll do repositório passando a Specification e o Pageable
+        return alunoRepository.findAll(specification, pageable);
     }
 }

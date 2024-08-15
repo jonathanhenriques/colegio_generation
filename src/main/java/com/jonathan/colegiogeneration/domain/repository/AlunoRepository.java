@@ -6,6 +6,5 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface AlunoRepository extends JpaRepository<Aluno, Long>,
-        JpaSpecificationExecutor<Aluno>  {
+public interface AlunoRepository extends JpaRepository<Aluno, Long> {
 }

@@ -1,5 +1,8 @@
 package com.jonathan.colegiogeneration.api.controller;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jonathan.colegiogeneration.domain.model.Aluno;
 import com.jonathan.colegiogeneration.domain.reponsedto.AlunoDTO;
 import com.jonathan.colegiogeneration.domain.reponsedto.AlunoDTOResponseAll;
@@ -14,9 +17,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.glassfish.jaxb.runtime.v2.schemagen.Util.equalsIgnoreCase;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 
 @Slf4j
@@ -126,12 +128,105 @@ public class AlunoController {
         return ResponseEntity.ok(pagedModel);
     }
 
-    @Operation(description = "Busca todos os Alunos")
+    @Parameter(
+            name = "filtro",
+            description = "filtros de busca (opcional)",
+            required = false,
+            schema = @Schema(
+                    type = "string",
+                    example = """
+        {
+            "id": 1,
+            "nome": "Simone Biles",
+            "idade": 27,
+            "notaPrimeiroSemestre": 8,
+            "notaSegundoSemestre": 7,
+            "nomeProfessor": "Professor Silva",
+            "numeroDaSala": 101
+        }
+        """
+            )
+    )
+    @Parameter(
+            name = "pageable",
+            hidden = true
+    )
+
+    @Operation(description = "Busca todos os Alunos com filtros opcionais")
     @GetMapping(value = "/filtro", produces = "application/json;charset=UTF-8")
-    public Page<Aluno> pesquisar(AlunoFilter filtro, @PageableDefault(size = 5) Pageable pageable) {
-//        Page<AtendenteED> page = atendenteRepository.findAll(ExameSpecifications.usandoFiltro(filtro), pageable);
-        return alunoService.findAll(AlunoSpecification.usandoFiltro(filtro), pageable);
+
+    public Page<Aluno> pesquisar(
+            @Parameter(
+                    name = "filtro",
+                    description = "JSON com os filtros de busca (opcional)",
+                    required = false,
+                    schema = @Schema(
+                            type = "string",
+                            example = """
+        {
+            "id": 1,
+            "nome": "Simone Biles",
+            "idade": 27,
+            "notaPrimeiroSemestre": 8,
+            "notaSegundoSemestre": 7,
+            "nomeProfessor": "Professor Silva",
+            "numeroDaSala": 101
+        }
+        """
+                    )
+            ) @RequestParam(required = false) String filtro,
+            @Parameter(
+                    name = "page",
+                    description = "Índice da página (começando em 0). Opcional.",
+                    required = false,
+                    schema = @Schema(type = "integer", defaultValue = "0")
+            ) @RequestParam(required = false) Integer page,
+            @Parameter(
+                    name = "size",
+                    description = "Tamanho da página. Opcional.",
+                    required = false,
+                    schema = @Schema(type = "integer", defaultValue = "10")
+            ) @RequestParam(required = false) Integer size,
+            @Parameter(
+                    name = "sort",
+                    description = "Critérios de ordenação no formato: propriedade ,(asc|desc) ex: nome,asc. Opcional.",
+                    required = false,
+                    schema = @Schema(type = "string", example = "nome,asc")
+            ) @RequestParam(required = false) String sort
+    ) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        AlunoFilter alunoFilter = filtro != null ? objectMapper.readValue(filtro, AlunoFilter.class) : new AlunoFilter();
+
+        // Configura a ordenação padrão
+        Sort sortCriteria = Sort.unsorted();
+
+        if (sort != null && !sort.isEmpty()) {
+            String[] sortParts = sort.split(",");
+            if (sortParts.length > 1) {
+                String sortField = sortParts[0]; // Primeiro valor é o campo
+                Sort.Direction sortDirection = sortParts[1].equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC; // Verifica se a direção é "desc"
+                sortCriteria = Sort.by(new Sort.Order(sortDirection, sortField));
+            } else {
+                // Se não houver direção, assume que é asc
+                String sortField = sortParts[0];
+                sortCriteria = Sort.by(new Sort.Order(Sort.Direction.ASC, sortField));
+            }
+        }
+
+        Pageable pageable = PageRequest.of(
+                page != null ? page : 0,
+                size != null ? size : 10,
+                sortCriteria
+        );
+
+        return alunoService.findAll(alunoFilter, pageable);
     }
+
+
+
+
+
 
 
     @ApiResponses(value = {
