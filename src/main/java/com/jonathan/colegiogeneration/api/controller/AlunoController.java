@@ -1,12 +1,10 @@
 package com.jonathan.colegiogeneration.api.controller;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jonathan.colegiogeneration.domain.model.Aluno;
 import com.jonathan.colegiogeneration.domain.reponsedto.AlunoDTO;
 import com.jonathan.colegiogeneration.domain.reponsedto.AlunoDTOResponseAll;
 import com.jonathan.colegiogeneration.domain.repository.filter.AlunoFilter;
+import org.springframework.data.domain.Pageable;
 import com.jonathan.colegiogeneration.domain.service.AlunoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -26,13 +24,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.glassfish.jaxb.runtime.v2.schemagen.Util.equalsIgnoreCase;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 
 @Slf4j
@@ -58,6 +52,11 @@ public class AlunoController {
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
                     content = @Content(mediaType = "application/json"))
     })
+
+    @Parameter(
+            name = "idAluno"
+
+    )
     public ResponseEntity<EntityModel<AlunoDTO>> getAlunoById(@PathVariable Long idAluno) {
         Aluno aluno = alunoService.getAlunoById(idAluno);
         AlunoDTO dto = mapToAlunoDTO(aluno);
@@ -86,6 +85,7 @@ public class AlunoController {
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
                     content = @Content(mediaType = "application/json"))
     })
+
     @Operation(description = "Busca todos os Alunos")
     @GetMapping(produces = "application/json;charset=UTF-8")
     public ResponseEntity<PagedModel<EntityModel<AlunoDTOResponseAll>>> getAllAluno(@Parameter(hidden = true) @PageableDefault(size = 5) Pageable pageable) {
@@ -127,100 +127,74 @@ public class AlunoController {
         return ResponseEntity.ok(pagedModel);
     }
 
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Sucesso",
+                    content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "400", description = "Erro na requisição",
+                    content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "404", description = "Aluno não encontrado",
+                    content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
+                    content = @Content(mediaType = "application/json"))
+    })
     @Parameter(
+            name = "filterDTO"
+
+    )
+    @Parameter(
+            name = "pageable"
+
+    )
+    @Operation(description = "Busca todos os Alunos com filtro")
+    @GetMapping(value = "/filtrado",produces = "application/json;charset=UTF-8")
+    public ResponseEntity<PagedModel<EntityModel<AlunoDTOResponseAll>>>getAllFiltrado
+   (@Parameter(
             name = "filtro",
-            description = "filtros de busca (opcional)",
-            required = false,
-            schema = @Schema(
-                    type = "string",
-                    example = """
-        {
-            "id": 1,
-            "nome": "Simone Biles",
-            "idade": 27,
-            "notaPrimeiroSemestre": 8,
-            "notaSegundoSemestre": 7,
-            "nomeProfessor": "Professor Silva",
-            "numeroDaSala": 101
-        }
-        """
-            )
-    )
-    @Parameter(
-            name = "pageable",
-            hidden = true
-    )
-
-    @Operation(description = "Busca todos os Alunos com filtros opcionais")
-    @GetMapping(value = "/filtro", produces = "application/json;charset=UTF-8")
-
-    public Page<Aluno> pesquisar(
-            @Parameter(
-                    name = "filtro",
-                    description = "JSON com os filtros de busca (opcional)",
-                    required = false,
-                    schema = @Schema(
-                            type = "string",
-                            example = """
-        {
-            "id": 1,
-            "nome": "Simone Biles",
-            "idade": 27,
-            "notaPrimeiroSemestre": 8,
-            "notaSegundoSemestre": 7,
-            "nomeProfessor": "Professor Silva",
-            "numeroDaSala": 101
-        }
-        """
+            description = "JSON com os filtros de busca (opcional)",
+            required = false)
+            AlunoFilter filterDTO,
+                    @Parameter(
+                            name = "page",
+                            description = "Índice da página (começando em 0) (opcional)",
+                            required = false,
+                            schema = @Schema(type = "integer", defaultValue = "0")
+                    )  Integer page,
+                    @Parameter(
+                            name = "size",
+                            description = "Tamanho da página (opcional)",
+                            required = false,
+                            schema = @Schema(type = "integer", defaultValue = "10")
+                    )  Integer size,
+                    @Parameter(
+                            name = "sort",
+                            description = """
+                                    (opcional) Ordenação: propriedades:
+                                     id, nome, idade, notaPrimeiroSemestre, notaSegundoSemestre, nomeProfessor, numeroDaSala.""",
+                            required = false,
+                            schema = @Schema(type = "string", example = "nome,asc")
                     )
-            ) @RequestParam(required = false) String filtro,
-            @Parameter(
-                    name = "page",
-                    description = "Índice da página (começando em 0). Opcional.",
-                    required = false,
-                    schema = @Schema(type = "integer", defaultValue = "0")
-            ) @RequestParam(required = false) Integer page,
-            @Parameter(
-                    name = "size",
-                    description = "Tamanho da página. Opcional.",
-                    required = false,
-                    schema = @Schema(type = "integer", defaultValue = "10")
-            ) @RequestParam(required = false) Integer size,
-            @Parameter(
-                    name = "sort",
-                    description = "Critérios de ordenação no formato: propriedade ,(asc|desc) ex: nome,asc. Opcional.",
-                    required = false,
-                    schema = @Schema(type = "string", example = "nome,asc")
-            ) @RequestParam(required = false) String sort
-    ) throws JsonProcessingException {
-        ObjectMapper objectMapper = new ObjectMapper();
+            Pageable pageable // Para paginação
+    ) {
+        Page<AlunoDTOResponseAll> alunos = alunoService.buscarAlunosFiltrados(filterDTO, pageable);
 
-        AlunoFilter alunoFilter = filtro != null ? objectMapper.readValue(filtro, AlunoFilter.class) : new AlunoFilter();
+        // Mapeia cada AlunoDTOResponseAll para um EntityModel
+        List<EntityModel<AlunoDTOResponseAll>> entityModels = alunos.getContent()
+                .stream()
+                .map(alunoDTO -> EntityModel.of(alunoDTO))
+                .collect(Collectors.toList());
 
-        // Configura a ordenação padrão
-        Sort sortCriteria = Sort.unsorted();
-
-        if (sort != null && !sort.isEmpty()) {
-            String[] sortParts = sort.split(",");
-            if (sortParts.length > 1) {
-                String sortField = sortParts[0]; // Primeiro valor é o campo
-                Sort.Direction sortDirection = sortParts[1].equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC; // Verifica se a direção é "desc"
-                sortCriteria = Sort.by(new Sort.Order(sortDirection, sortField));
-            } else {
-                // Se não houver direção, assume que é asc
-                String sortField = sortParts[0];
-                sortCriteria = Sort.by(new Sort.Order(Sort.Direction.ASC, sortField));
-            }
-        }
-
-        Pageable pageable = PageRequest.of(
-                page != null ? page : 0,
-                size != null ? size : 10,
-                sortCriteria
+        // Constrói o PagedModel
+        PagedModel.PageMetadata metadata = new PagedModel.PageMetadata(
+                alunos.getSize(),
+                alunos.getNumber(),
+                alunos.getTotalElements()
         );
+        PagedModel<EntityModel<AlunoDTOResponseAll>> pagedModel = PagedModel.of(entityModels, metadata);
 
-        return alunoService.findAll(alunoFilter, pageable);
+        return ResponseEntity.ok(pagedModel);
     }
+
 
 
 
@@ -242,20 +216,52 @@ public class AlunoController {
     })
     @Operation(description = "Cria um Aluno")
     @PostMapping
-    public ResponseEntity<EntityModel<AlunoDTO>> postAluno(@RequestBody AlunoDTO aluno) {
-        AlunoDTO alunoSalvo = mapToAlunoDTO(alunoService.postAluno(mapToAluno(aluno)));
+    public ResponseEntity<Aluno> postAluno(@RequestBody
+   @Parameter(
+           name = "filtro",
+           description = "JSON com os filtros de busca (opcional)",
+           required = false,
+           schema = @Schema(
+                   type = "string",
+                   example = """
+                           {
 
-        EntityModel<AlunoDTO> alunoResource = EntityModel.of(alunoSalvo);
+                               "nome": "Rebeca Andrade",
+                               "idade": 25,
+                               "notaPrimeiroSemestre": 8,
+                               "notaSegundoSemestre": 7,
+                               "nomeProfessor": "Professor Silva",
+                               "numeroDaSala": 101
+                           }
+                           """
+           )
+   )
+                                                               Aluno aluno) {
+//        Aluno alunoSalvo = alunoService.postAluno(aluno);
+//
+//        EntityModel<Aluno> alunoResource = EntityModel.of(alunoSalvo);
+//
+//        List<Link> links = Arrays.asList(getSelfLinkA(alunoSalvo), getByIdAlunoLink(alunoSalvo.getId()), getPutAlunoLinkA(alunoSalvo),
+//                getDeleteAlunoLinkA(alunoSalvo), getAllAlunosLink());
+//
+//        links.forEach(alunoResource::add);
 
-        List<Link> links = Arrays.asList(getSelfLink(alunoSalvo), getByIdAlunoLink(alunoSalvo.getId()), getPutAlunoLink(alunoSalvo),
-                getDeleteAlunoLink(alunoSalvo), getAllAlunosLink());
+        Aluno teste = new Aluno();
+        teste.setNome("Teste");
+        teste.setIdade(8L);
+        teste.setNomeProfessor("teste professor");
+        teste.setNumeroDaSala(9L);
+        teste.setNotaSegundoSemestre(9L);
+        teste.setNotaSegundoSemestre(9L);
 
-        links.forEach(alunoResource::add);
 
-        log.info("Alunocontroller postAluno chamado e criado / {}", alunoSalvo.getId());
+//        log.info("Alunocontroller postAluno chamado e criado / {}", alunoSalvo.getId());
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(alunoResource);
+        return ResponseEntity.status(HttpStatus.CREATED).body(alunoService.postAluno(aluno));
     }
+
+
+
 
 
 
@@ -269,14 +275,21 @@ public class AlunoController {
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
                     content = @Content(mediaType = "application/json"))
     })
+
+    @Parameter(
+            name = "id",
+            description = "id do aluno",
+            example = "1"
+
+    )
     @Operation(description = "Atualiza um Aluno por id")
     @PutMapping("/{id}")
     public ResponseEntity<EntityModel<AlunoDTO>> putAluno(
             @PathVariable Long id,
             @RequestBody @Schema(description = "Detalhes do aluno", example = """
         {
-            "nome": "Simone Biles",
-            "idade": 27,
+            "nome": "Rebeca Andrade",
+            "idade": 25,
             "notaPrimeiroSemestre": 8,
             "notaSegundoSemestre": 7,
             "nomeProfessor": "Professor Silva",
@@ -312,6 +325,12 @@ public class AlunoController {
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
                     content = @Content(mediaType = "application/json"))
     })
+    @Parameter(
+            name = "id",
+            description = "id do aluno",
+            example = "1"
+
+    )
     @Operation(description = "Atualiza um Aluno por parâmetros")
     @PatchMapping("/{id}")
     public ResponseEntity<EntityModel<AlunoDTO>> patchAluno(@PathVariable Long id, @RequestBody @Schema(description = "Detalhes do aluno", example = """
@@ -351,6 +370,8 @@ public class AlunoController {
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
                     content = @Content(mediaType = "application/json"))
     })
+
+
     @Operation(description = "Deleta um Aluno por id")
     @DeleteMapping("/{idAluno}")
     public ResponseEntity<?> deleteAluno(@PathVariable Long idAluno) {
@@ -384,9 +405,30 @@ public class AlunoController {
     }
 
 
+    private static Link getSelfLinkA(Aluno aluno) {
+        return linkTo(AlunoController.class).slash(aluno.getId()).withSelfRel();
+    }
+
+    private static Link getDeleteAlunoLinkA(Aluno aluno) {
+        return linkTo(AlunoController.class).slash("alunos").slash(aluno.getId()).withRel("deletar-aluno");
+    }
+
+    private static Link getPutAlunoLinkA(Aluno aluno) {
+        return linkTo(AlunoController.class).slash("alunos").slash(aluno.getId()).withRel("atualizar-aluno");
+    }
+
+
+    private static Link getSelfLinkA(AlunoDTO aluno) {
+        return linkTo(AlunoController.class).slash(aluno.getId()).withSelfRel();
+    }
+
+//========================================
+
+
     private static Link getSelfLink(AlunoDTO aluno) {
         return linkTo(AlunoController.class).slash(aluno.getId()).withSelfRel();
     }
+
 
     private static Link getByIdAlunoLink(Long id) {
         return linkTo(AlunoController.class).slash("alunos").slash(id).withRel("obter-por-id-aluno");
@@ -408,6 +450,9 @@ public class AlunoController {
     private static Link getPutAlunoLink(AlunoDTO aluno) {
         return linkTo(AlunoController.class).slash("alunos").slash(aluno.getId()).withRel("atualizar-aluno");
     }
+
+
+
 
     private AlunoDTO mapToAlunoDTO(Aluno aluno) {
         AlunoDTO alunoDTO = new AlunoDTO();

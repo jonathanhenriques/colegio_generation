@@ -19,7 +19,7 @@ public enum ProblemType {
 
     ProblemType(String path, String title) {
         //TODO usar url atualizada
-        this.uri = "https://cuidarapp.com.br" + path;
+        this.uri = "http://localhost:8080/api/v1" + path;
         this.title = title;
     }
 

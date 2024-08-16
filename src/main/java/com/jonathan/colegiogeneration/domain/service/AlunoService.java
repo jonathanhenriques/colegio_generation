@@ -1,6 +1,8 @@
 package com.jonathan.colegiogeneration.domain.service;
 
 import com.jonathan.colegiogeneration.domain.model.Aluno;
+import com.jonathan.colegiogeneration.domain.reponsedto.AlunoDTO;
+import com.jonathan.colegiogeneration.domain.reponsedto.AlunoDTOResponseAll;
 import com.jonathan.colegiogeneration.domain.repository.filter.AlunoFilter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,8 +29,7 @@ public interface AlunoService {
 
     void deleteAluno(Aluno aluno);
 
-//    Page<Aluno> findAll(Specification<Aluno> alunoSpecification, Pageable pageable);
+    Page<AlunoDTOResponseAll> buscarAlunosFiltrados(AlunoFilter filterDTO, Pageable pageable);
 
-     Page<Aluno> findAll(AlunoFilter filtro, Pageable pageable);
 
 }

@@ -8,7 +8,7 @@ import lombok.*;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Schema(description = "Representa um alunodto")
+@Schema(description = "Representa um alunodto", hidden = true)
 public class AlunoDTO {
 
         private Long id;

@@ -3,14 +3,15 @@ package com.jonathan.colegiogeneration.domain.service;
 import com.jonathan.colegiogeneration.api.controller.AlunoController;
 import com.jonathan.colegiogeneration.api.exception.AlunoNaoEncontradoException;
 import com.jonathan.colegiogeneration.domain.model.Aluno;
+import com.jonathan.colegiogeneration.domain.reponsedto.AlunoDTO;
+import com.jonathan.colegiogeneration.domain.reponsedto.AlunoDTOResponseAll;
 import com.jonathan.colegiogeneration.domain.repository.AlunoRepository;
 import com.jonathan.colegiogeneration.domain.repository.filter.AlunoFilter;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Example;
+import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -51,7 +52,8 @@ public class AlunoServiceImpl implements AlunoService {
 
     @Override
     public Aluno postAluno(Aluno aluno) {
-        log.info("AlunoService postAluno chamado " );
+        log.info("AlunoService postAluno chamado ");
+        log.info("--------------------------------{} " + aluno);
         return alunoRepository.save(aluno);
     }
 
@@ -123,25 +125,88 @@ public class AlunoServiceImpl implements AlunoService {
     }
 
 
-
     @Override
     public void deleteAluno(Aluno aluno) {
         log.info("AlunoService deleteAluno chamado para id " + aluno.getId());
         alunoRepository.delete(aluno);
     }
 
-    @Override
-    public Page<Aluno> findAll(AlunoFilter filtro, Pageable pageable) {
-        // Chama o método findByFilters passando os parâmetros do filtro
-        return alunoRepository.findByFilters(
-                filtro.getId(),
-                filtro.getNome(),
-                filtro.getIdade(),
-                filtro.getNotaPrimeiroSemestre(),
-                filtro.getNotaSegundoSemestre(),
-                filtro.getNomeProfessor(),
-                filtro.getNumeroDaSala(),
-                pageable
-        );
+
+    public Page<AlunoDTOResponseAll> buscarAlunosFiltrados(AlunoFilter filterDTO, Pageable pageable) {
+        // Construir a query dinamicamente com base nos parâmetros não nulos
+        ExampleMatcher matcher = ExampleMatcher.matching()
+                .withIgnoreCase()
+                .withStringMatcher(ExampleMatcher.StringMatcher.CONTAINING);
+
+
+        Example<Aluno> example = Example.of(Aluno.builder()
+                .id(filterDTO.getId())
+                .nome(filterDTO.getNome())
+                .idade(filterDTO.getIdade())
+                // ... outros atributos
+                .build(), matcher);
+
+        Page<Aluno> alunos = alunoRepository.findAll(example, pageable);
+
+        return alunos.map(aluno -> {
+            // Mapear Aluno para AlunoDTOResponseAll
+            AlunoDTOResponseAll alunoDTO = new AlunoDTOResponseAll(aluno.getId(), aluno.getNome());
+
+            return alunoDTO;
+        });
+    }
+
+
+
+
+
+
+    private AlunoDTO mapToAlunoDTO(Aluno aluno) {
+        return new AlunoDTO(aluno.getId(), aluno.getNome(), aluno.getIdade(),
+                aluno.getNotaPrimeiroSemestre(), aluno.getNotaSegundoSemestre(),
+                aluno.getNomeProfessor(), aluno.getNumeroDaSala());
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//    public Page<AlunoDTO> getFilteredAlunos(AlunoDTO filter, Pageable pageable) {
+//        Specification<Aluno> spec = AlunoSpecification.filterBy(filter);
+//        Page<Aluno> alunosPage = alunoRepository.findAll(spec, pageable);
+//
+//        return alunosPage.map(this::mapToAlunoDTO);
+//    }
+
+//    private AlunoDTO mapToAlunoDTO(Aluno aluno) {
+//        AlunoDTO alunoDTO = new AlunoDTO();
+//        alunoDTO.setId(aluno.getId());
+//        alunoDTO.setNome(aluno.getNome());
+//        alunoDTO.setIdade(aluno.getIdade());
+//        alunoDTO.setNotaPrimeiroSemestre(aluno.getNotaPrimeiroSemestre());
+//
+//        alunoDTO.setNotaSegundoSemestre(aluno.getNotaSegundoSemestre());
+//        alunoDTO.setNomeProfessor(aluno.getNomeProfessor());
+//        alunoDTO.setNumeroDaSala(aluno.getNumeroDaSala());
+//        return alunoDTO;
+//    }
+
+
+
+
+
