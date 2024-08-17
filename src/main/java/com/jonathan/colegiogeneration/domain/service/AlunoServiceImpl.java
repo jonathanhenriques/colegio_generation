@@ -3,10 +3,14 @@ package com.jonathan.colegiogeneration.domain.service;
 import com.jonathan.colegiogeneration.api.controller.AlunoController;
 import com.jonathan.colegiogeneration.api.exception.AlunoNaoEncontradoException;
 import com.jonathan.colegiogeneration.domain.model.Aluno;
+import com.jonathan.colegiogeneration.domain.reponsedto.AlunoDTOResponseAll;
 import com.jonathan.colegiogeneration.domain.repository.AlunoRepository;
+import com.jonathan.colegiogeneration.domain.repository.filter.AlunoFilter;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Example;
+import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -129,5 +133,30 @@ public class AlunoServiceImpl implements AlunoService {
         } else {
             throw new AlunoNaoEncontradoException(aluno.getId());
         }
+    }
+
+
+    public Page<AlunoDTOResponseAll> buscarAlunosFiltrados(AlunoFilter filterDTO, Pageable pageable) {
+        // Construir a query dinamicamente com base nos parâmetros não nulos
+        ExampleMatcher matcher = ExampleMatcher.matching()
+                .withIgnoreCase()
+                .withStringMatcher(ExampleMatcher.StringMatcher.CONTAINING);
+
+
+        Example<Aluno> example = Example.of(Aluno.builder()
+                .id(filterDTO.getId())
+                .nome(filterDTO.getNome())
+                .idade(filterDTO.getIdade())
+                // ... outros atributos
+                .build(), matcher);
+
+        Page<Aluno> alunos = alunoRepository.findAll(example, pageable);
+
+        return alunos.map(aluno -> {
+            // Mapear Aluno para AlunoDTOResponseAll
+            AlunoDTOResponseAll alunoDTO = new AlunoDTOResponseAll(aluno.getId(), aluno.getNome());
+
+            return alunoDTO;
+        });
     }
 }

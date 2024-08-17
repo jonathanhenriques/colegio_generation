@@ -1,6 +1,8 @@
 package com.jonathan.colegiogeneration.domain.service;
 
 import com.jonathan.colegiogeneration.domain.model.Aluno;
+import com.jonathan.colegiogeneration.domain.reponsedto.AlunoDTOResponseAll;
+import com.jonathan.colegiogeneration.domain.repository.filter.AlunoFilter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -24,4 +26,6 @@ public interface AlunoService {
     Aluno patchAluno(Long id, Map<String, Object> updates);
 
     void deleteAluno(Aluno aluno);
+
+     Page<AlunoDTOResponseAll> buscarAlunosFiltrados(AlunoFilter filterDTO, Pageable pageable);
 }
