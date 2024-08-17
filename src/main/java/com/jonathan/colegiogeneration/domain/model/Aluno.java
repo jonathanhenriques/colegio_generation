@@ -1,5 +1,6 @@
 package com.jonathan.colegiogeneration.domain.model;
 
+import com.jonathan.colegiogeneration.domain.reponsedto.AlunoDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
@@ -51,4 +52,18 @@ public class Aluno extends RepresentationModel<Aluno> {
     @Min(value = 1, message = "numeroDaSala precisa ser maior ou igual a 1")
     @Max(value = 150, message = "numeroDaSala precisa ser menor ou igual a 150")
     private Long numeroDaSala;
+
+
+    public Aluno(AlunoDTO alunoDTO) {
+
+        this.id = alunoDTO.getId();
+        this.nome = alunoDTO.getNome();
+        this.idade = alunoDTO.getIdade();
+        this.notaPrimeiroSemestre = alunoDTO.getNotaPrimeiroSemestre();
+        this.notaSegundoSemestre = alunoDTO.getNotaSegundoSemestre();
+        this.nomeProfessor = alunoDTO.getNomeProfessor();
+        this.numeroDaSala = alunoDTO.getNumeroDaSala();
+
+    }
+
 }

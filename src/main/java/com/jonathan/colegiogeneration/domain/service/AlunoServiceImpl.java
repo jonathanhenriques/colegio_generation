@@ -49,7 +49,7 @@ public class AlunoServiceImpl implements AlunoService {
 
     @Override
     public Aluno postAluno(Aluno aluno) {
-        log.info("AlunoService postAluno chamado " );
+        log.info("AlunoService postAluno chamado ");
         return alunoRepository.save(aluno);
     }
 
@@ -121,10 +121,13 @@ public class AlunoServiceImpl implements AlunoService {
     }
 
 
-
     @Override
     public void deleteAluno(Aluno aluno) {
-        log.info("AlunoService deleteAluno chamado para id " + aluno.getId());
-        alunoRepository.delete(aluno);
+        if (alunoRepository.existsById(aluno.getId())) {
+            log.info("AlunoService deleteAluno chamado para id " + aluno.getId());
+            alunoRepository.delete(aluno);
+        } else {
+            throw new AlunoNaoEncontradoException(aluno.getId());
+        }
     }
 }
